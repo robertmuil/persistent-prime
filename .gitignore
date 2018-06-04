@@ -1,0 +1,6 @@
+.*.sw?
+*~
+.ipynb_checkpoints
+__pycache__
+venv
+.backup
