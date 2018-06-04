@@ -4,7 +4,8 @@ class Prime(object):
     """
     We maintain two pieces of state: a list and a set.
     The set (known_primes) contains all known primes, in no order and not necessarily contiguous.
-    These 
+    These are used to do a look-up to short-circuit checks of primality.
+    The list (known_primes_contiguous) is used to check for numbers that are not yet known to be prime or composite.
     """
     def __init__(self):
         self.__known_primes = set()
@@ -33,22 +34,7 @@ class Prime(object):
         self.__known_primes_contiguous = kpc
         self.__known_primes = self.__known_primes.union(kpc)
         
-    def prime_factors_known(self, n):
-        """
-        Recursive
-        """
-        f = []
-        if n > self.known_primes_contiguous[-1]**2:
-            raise ValueError('n too high for current known_primes')
-        for p in self.known_primes_contiguous:
-            if n%p == 0:
-                f += [p]
-                f += self.prime_factors_known(n/p)
-                break
-        if len(f) == 0:
-            f += [n]
-        return f
-    
+
     def iter_primes(self, max_value=None):
         """
         Iterates over *all* prime numbers, utilising the known_primes first.
@@ -115,6 +101,32 @@ class Prime(object):
                     break   
         
         return rv
+    
+    def prime_factors(self, n):
+        """
+        Recursive.
+        
+        >>> p = Prime()
+        >>> p.prime_factors(9)
+        [3, 3]
+        >>> p.prime_factors(21)
+        [3, 7]
+        >>> p.prime_factors(51)
+        [3, 17]
+        >>> p.prime_factors(53)
+        [53]
+        >>> p.prime_factors(1021)
+        [1021]
+        """
+        f = []
+        for p in self.iter_primes(n**(1/2)):
+            if n%p == 0:
+                f += [p]
+                f += self.prime_factors(n//p)
+                break
+        if len(f) == 0:
+            f += [n]
+        return f
     
 if __name__ == '__main__':
     import doctest
