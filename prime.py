@@ -35,7 +35,7 @@ class Prime(object):
         self.__known_primes = self.__known_primes.union(kpc)
         
 
-    def iter_primes(self, max_value=None):
+    def iter_primes(self, max_value=None, max_num=None, start_num=None):
         """
         Iterates over *all* prime numbers, utilising the known_primes first.
         
@@ -48,12 +48,25 @@ class Prime(object):
         [2, 3, 5, 7, 11, 13, 17, 19]
         >>> [i for i in p.iter_primes(3)]
         [2, 3]
+        
+        >>> [i for i in p.iter_primes(max_num=3)]
+        [2, 3, 5]
+        >>> [i for i in p.iter_primes(max_num=10)]
+        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+        
+        >>> [i for i in p.iter_primes(max_num=10, start_num=7)]
+        [19, 23, 29]
         """
-        ii = 0
-        def _finished(c):
-            return (max_value is not None) and (c > max_value)
+        ii = start_num or 0
+        if ii > len(self.known_primes_contiguous):
+            raise NotImplementedError('cannot start beyond contiguous known primes (currently {:d} of them)'.format(
+            len(self.known_primes_contiguous)))
+            
+        def _finished(c, ii=None):
+            return ((max_value is not None) and (c > max_value) or 
+                    ((max_num is not None) and (ii is not None) and (ii >= max_num)))
         c = 1
-        while not _finished(c):
+        while not _finished(c, ii):
             while ii+1 > len(self.known_primes_contiguous):
                 c = self.known_primes_contiguous[-1] + 2
                 if _finished(c):
@@ -127,6 +140,43 @@ class Prime(object):
         if len(f) == 0:
             f += [n]
         return f
+    
+    def are_prime(self, candidates):
+        """
+        >>> p = Prime()
+        >>> p.are_prime([2, 3, 5])
+        True
+        >>> p.are_prime([2, 3, 5, 6])
+        False
+        
+        """
+        found = False
+        for c in candidates:
+            if not self.is_prime(c):
+                found = True
+        return not found
+        
+    def load(self, fname='known_primes_contiguous.txt', verify=1000, load_smaller=False):
+        kpc = []
+        with open(fname, 'rt') as f:
+            kpc = [int(i) for i in f.readlines()]
+        if verify and not self.are_prime(kpc[0:verify]):
+            raise ValueError('first {:d} loaded numbers are not prime'.format(verify_num))
+        if len(self.known_primes_contiguous) > len(kpc):
+            if not load_smaller:
+                raise ValueError('{:d} primes loaded, but already have {:d}'.format(
+                    len(kpc),
+                    len(self.known_primes_contiguous)))
+        self.__known_primes = set()
+        self.known_primes_contiguous = kpc
+
+    def save(self, fname=None, overwrite=False):
+        if fname is None:
+            fname = 'known_primes_contiguous.txt'
+        bytes_written = None
+        with open(fname, 'w' if overwrite else 'x') as f:
+            bytes_written = f.write('\n'.join([str(p) for p in self.known_primes_contiguous]))
+        return bytes_written
     
 if __name__ == '__main__':
     import doctest
